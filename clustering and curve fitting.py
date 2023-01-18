@@ -10,9 +10,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn import metrics
-import scipy.optimize as opt
+from scipy.optimize import curve_fit
 import numpy as np
 import itertools as iter
+from uncertainties import ufloat
 from sklearn.preprocessing import MinMaxScaler
 from warnings import filterwarnings
 filterwarnings('ignore')
@@ -43,6 +44,14 @@ X = X.dropna()
 # Normalize the data using MinMaxScaler
 scaler = MinMaxScaler()
 X_pca = scaler.fit_transform(X.iloc[:, -2:])
+
+# Visualising original and MinMax scaled data
+fig, axes = plt.subplots(1, 2)
+axes[0].scatter(X.iloc[:, 0], X.iloc[:, 1], c='red')
+axes[0].set_title("Original data")
+axes[1].scatter(X_pca[:, 0], X_pca[:, 1], c='green')
+axes[1].set_title("MinMax scaled data")
+plt.show()
 css = []
 
 # Finding inertia on various k values to identify number of clusters
@@ -140,9 +149,10 @@ DATA = pd.melt(DATA, id_vars="Country Name",
                            ], var_name="Years",
                value_name="Emission")
 print(DATA)
+
 DATA["Years"] = DATA["Years"].astype(float)
-param, covar = opt.curve_fit(logistics, DATA["Years"],
-                             DATA["Emission"])
+param, covar = curve_fit(logistics, DATA["Years"],
+                         DATA["Emission"])
 print("Fit parameter", param)
 DATA["log"] = logistics(DATA["Years"], *param)
 
@@ -153,7 +163,7 @@ plt.plot(DATA["Years"], DATA["log"], label="fit")
 plt.legend()
 plt.title("First fit attempt")
 plt.xlabel("year")
-plt.ylabel("population")
+plt.ylabel("CO2 Emission dta of China")
 plt.show()
 print()
 
@@ -169,70 +179,34 @@ plt.plot(DATA["Years"], DATA["log"], label="fit")
 
 plt.legend()
 plt.xlabel("year")
-plt.ylabel("population")
+plt.ylabel("CO2 Emission dta of China")
 plt.title("Improved start value")
 plt.show()
 
 
-param, covar = opt.curve_fit(logistics, DATA["Years"],  DATA["Emission"],
-                             p0=[7.04, 0.02, 2012])
+param, covar = curve_fit(logistics, DATA["Years"],  DATA["Emission"],
+                         p0=[7.04, 0.02, 2012])
 print("Fit parameter", param)
-
 DATA["log"] = logistics(DATA["Years"], *param)
+sigma = np.sqrt(np.diagonal(covar))
+a = ufloat(param[0], sigma[0])
+b = ufloat(param[1], sigma[1])
+x_pred = np.linspace(1995, 2025, 20)
+text_res = "Best fit parameters:\na = {}\nb = {}".format(a, b)
+print(text_res)
 
 plt.figure()
 plt.plot(DATA["Years"], DATA["Emission"], label="data")
-plt.plot(DATA["Years"], DATA["log"], label="fit")
-
+plt.plot(x_pred, logistics(x_pred, *param), 'red', label="fit")
+bound_upper = logistics(x_pred, *(param + sigma))
+bound_lower = logistics(x_pred, *(param - sigma))
+# plotting the confidence intervals
+plt.fill_between(x_pred, bound_lower, bound_upper,
+                 color='black', alpha=0.15, label="Confidence")
 plt.legend()
 plt.title("Final logistics function")
 plt.xlabel("year")
-plt.xlabel("year")
-plt.ylabel("population")
+plt.ylabel("CO2 Emission dta of China")
 plt.show()
 
 
-def err_ranges(x, func, param, sigma):
-    """
-    Calculates the upper and lower limits for the function, parameters and
-    sigmas for single value or array x. Functions values are calculated for
-    all combinations of +/- sigma and the minimum and maximum is determined.
-    Can be used for all number of parameters and sigmas >=1.
-
-    """
-
-    # initiate arrays for lower and upper limits
-    lower = func(x, *param)
-    upper = lower
-
-    uplow = []   # list to hold upper and lower limits for parameters
-    for p, s in zip(param, sigma):
-        pmin = p - s
-        pmax = p + s
-        uplow.append((pmin, pmax))
-
-    pmix = list(iter.product(*uplow))
-
-    for p in pmix:
-        y = func(x, *p)
-        lower = np.minimum(lower, y)
-        upper = np.maximum(upper, y)
-
-    return lower, upper
-
-
-# Use err_ranges function to estimate lower and upper limits of the confidence range
-param, covar = opt.curve_fit(logistics, DATA["Years"],  DATA["Emission"])
-x_pred = np.linspace(2021, 2040, 20)
-
-# calculate the standard deviation for each parameter
-sigma = np.sqrt(np.diag(covar))
-y_pred, y_pred_err = err_ranges(x_pred, logistics, param, sigma)
-plt.figure()
-plt.plot(DATA["Years"], DATA["Emission"], label="data")
-plt.plot(DATA["Years"], DATA["log"], label="fit")
-plt.fill_between(x_pred, y_pred, y_pred_err, color='pink', label='confidence interval')
-plt.legend()
-plt.xlabel('Year')
-plt.ylabel('cereal_yield')
-plt.show()

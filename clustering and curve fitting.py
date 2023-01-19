@@ -12,7 +12,6 @@ from sklearn.cluster import KMeans
 from sklearn import metrics
 from scipy.optimize import curve_fit
 import numpy as np
-import itertools as iter
 from uncertainties import ufloat
 from sklearn.preprocessing import MinMaxScaler
 from warnings import filterwarnings
@@ -82,17 +81,16 @@ score = metrics.silhouette_score(X_pca, labels, metric='euclidean')
 # Print the score
 print('Silhouetter Score: %.3f' % score)
 
-# iPlot three clusters
+# Plot three clusters
 plt.scatter(X_pca[y_kmeans == 0, 0], X_pca[y_kmeans == 0, 1], c='magenta',
             label='Cluster 1')
 plt.scatter(X_pca[y_kmeans == 1, 0], X_pca[y_kmeans == 1, 1], c='blue',
             label='Cluster 2')
 plt.scatter(X_pca[y_kmeans == 2, 0], X_pca[y_kmeans == 2, 1], c='green',
             label='Cluster 3')
-
+# Plot three centroids
 plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1],
             c='black', label='Centroids', s=100, marker="*")
-
 plt.title("K means Clustering")
 plt.legend()
 plt.xlabel('CO2 Emission data 1990', fontsize=12)
@@ -100,6 +98,8 @@ plt.ylabel('CO2 Emission data 2019', fontsize=12)
 plt.grid(True)
 plt.show()
 
+
+# Setting iteartions for better results
 n_iter = 9
 fig, ax = plt.subplots(3, 3, figsize=(16, 16))
 ax = np.ravel(ax)
@@ -126,6 +126,7 @@ for i in range(n_iter):
 plt.show()
 
 
+# Curve fitting
 def logistics(t, scale, growth, t0):
     """ Computes logistics function with scale, growth raat
     and time of the turning point as free parameters
@@ -135,7 +136,7 @@ def logistics(t, scale, growth, t0):
 
     return f
 
-
+# Data Preprocessing
 DATA = DATA1[["Country Name", "Indicator Code", '1996', '1997', '1998', '1999',
              '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007',
               '2008', '2009', '2010', '2011', '2012', '2013', '2014', '2015',
@@ -151,6 +152,8 @@ DATA = pd.melt(DATA, id_vars="Country Name",
 print(DATA)
 
 DATA["Years"] = DATA["Years"].astype(float)
+
+# Fitting the logistic function
 param, covar = curve_fit(logistics, DATA["Years"],
                          DATA["Emission"])
 print("Fit parameter", param)
@@ -159,7 +162,6 @@ DATA["log"] = logistics(DATA["Years"], *param)
 plt.figure()
 plt.plot(DATA["Years"], DATA["Emission"], label="data")
 plt.plot(DATA["Years"], DATA["log"], label="fit")
-
 plt.legend()
 plt.title("First fit attempt")
 plt.xlabel("year")
@@ -176,7 +178,6 @@ DATA["log"] = logistics(DATA["Years"], *param)
 plt.figure()
 plt.plot(DATA["Years"], DATA["Emission"], label="data")
 plt.plot(DATA["Years"], DATA["log"], label="fit")
-
 plt.legend()
 plt.xlabel("year")
 plt.ylabel("CO2 Emission dta of China")
@@ -191,13 +192,17 @@ DATA["log"] = logistics(DATA["Years"], *param)
 sigma = np.sqrt(np.diagonal(covar))
 a = ufloat(param[0], sigma[0])
 b = ufloat(param[1], sigma[1])
+
+# Estimating forecast from 1995 to 2025
 x_pred = np.linspace(1995, 2025, 20)
+# Estimating best fit parameter
 text_res = "Best fit parameters:\na = {}\nb = {}".format(a, b)
 print(text_res)
 
 plt.figure()
 plt.plot(DATA["Years"], DATA["Emission"], label="data")
 plt.plot(x_pred, logistics(x_pred, *param), 'red', label="fit")
+# Upper bound and Lower bound for confidence intervals
 bound_upper = logistics(x_pred, *(param + sigma))
 bound_lower = logistics(x_pred, *(param - sigma))
 # plotting the confidence intervals

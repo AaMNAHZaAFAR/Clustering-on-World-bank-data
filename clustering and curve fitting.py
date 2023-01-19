@@ -2,7 +2,7 @@
 
 # -*- coding: utf-8 -*-
 """
-Created on Thu Dec  8 11:39:59 2022
+github link:https://github.com/AaMNAHZaAFAR/Clustering-on-World-bank-data
 
 @author: RajaI
 """
@@ -136,6 +136,7 @@ def logistics(t, scale, growth, t0):
 
     return f
 
+
 # Data Preprocessing
 DATA = DATA1[["Country Name", "Indicator Code", '1996', '1997', '1998', '1999',
              '2000', '2001', '2002', '2003', '2004', '2005', '2006', '2007',
@@ -154,64 +155,59 @@ print(DATA)
 DATA["Years"] = DATA["Years"].astype(float)
 
 # Fitting the logistic function
-param, covar = curve_fit(logistics, DATA["Years"],
-                         DATA["Emission"])
-print("Fit parameter", param)
-DATA["log"] = logistics(DATA["Years"], *param)
-
+parameter, covar = curve_fit(logistics, DATA["Years"], DATA["Emission"])
+print("Fit parameter at first attempt", parameter)
+DATA["log"] = logistics(DATA["Years"], *parameter)
 plt.figure()
-plt.plot(DATA["Years"], DATA["Emission"], label="data")
+plt.plot(DATA["Years"], DATA["Emission"], label="Original data")
 plt.plot(DATA["Years"], DATA["log"], label="fit")
 plt.legend()
 plt.title("First fit attempt")
 plt.xlabel("year")
-plt.ylabel("CO2 Emission dta of China")
+plt.ylabel("CO2 Emission data of China")
 plt.show()
 print()
 
 
-# estimated turning year: 2012
+# Set estimated turning year: 2012
 # Co2 emission in 2012: about 7.04
-param = [7.04, 0.02, 2012]
-DATA["log"] = logistics(DATA["Years"], *param)
-
+parameter = [7.04, 0.02, 2012]
+DATA["log"] = logistics(DATA["Years"], *parameter)
 plt.figure()
-plt.plot(DATA["Years"], DATA["Emission"], label="data")
+plt.plot(DATA["Years"], DATA["Emission"], label="Original data")
 plt.plot(DATA["Years"], DATA["log"], label="fit")
 plt.legend()
 plt.xlabel("year")
-plt.ylabel("CO2 Emission dta of China")
+plt.ylabel("CO2 Emission data of China")
 plt.title("Improved start value")
 plt.show()
 
 
-param, covar = curve_fit(logistics, DATA["Years"],  DATA["Emission"],
-                         p0=[7.04, 0.02, 2012])
-print("Fit parameter", param)
-DATA["log"] = logistics(DATA["Years"], *param)
+parameter, covar = curve_fit(logistics, DATA["Years"],  DATA["Emission"],
+                             p0=[7.04, 0.02, 2012])
+print("Fit parameter at final attempt ", parameter)
+DATA["log"] = logistics(DATA["Years"], *parameter)
 sigma = np.sqrt(np.diagonal(covar))
-a = ufloat(param[0], sigma[0])
-b = ufloat(param[1], sigma[1])
-
+x = ufloat(parameter[0], sigma[0])
+y = ufloat(parameter[1], sigma[1])
 # Estimating forecast from 1995 to 2025
-x_pred = np.linspace(1995, 2025, 20)
+y_pred = np.linspace(1995, 2025, 20)
 # Estimating best fit parameter
-text_res = "Best fit parameters:\na = {}\nb = {}".format(a, b)
+text_res = "Best fit parameters:\na = {}\nb = {}".format(x, y)
 print(text_res)
 
 plt.figure()
-plt.plot(DATA["Years"], DATA["Emission"], label="data")
-plt.plot(x_pred, logistics(x_pred, *param), 'red', label="fit")
+plt.plot(DATA["Years"], DATA["Emission"], label="Original data")
+plt.plot(y_pred, logistics(y_pred, *parameter), 'red', label="fit")
 # Upper bound and Lower bound for confidence intervals
-bound_upper = logistics(x_pred, *(param + sigma))
-bound_lower = logistics(x_pred, *(param - sigma))
+bound_upper = logistics(y_pred, *(parameter + sigma))
+bound_lower = logistics(y_pred, *(parameter - sigma))
 # plotting the confidence intervals
-plt.fill_between(x_pred, bound_lower, bound_upper,
+plt.fill_between(y_pred, bound_lower, bound_upper,
                  color='black', alpha=0.15, label="Confidence")
 plt.legend()
 plt.title("Final logistics function")
 plt.xlabel("year")
-plt.ylabel("CO2 Emission dta of China")
+plt.ylabel("CO2 Emission data of China")
 plt.show()
-
 

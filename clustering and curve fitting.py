@@ -157,14 +157,14 @@ DATA["Years"] = DATA["Years"].astype(float)
 # Fitting the logistic function
 parameter, covar = curve_fit(logistics, DATA["Years"], DATA["Emission"])
 print("Fit parameter at first attempt", parameter)
-DATA["log"] = logistics(DATA["Years"], *parameter)
+DATA["logistic"] = logistics(DATA["Years"], *parameter)
 plt.figure()
 plt.plot(DATA["Years"], DATA["Emission"], label="Original data")
-plt.plot(DATA["Years"], DATA["log"], label="fit")
-plt.legend()
+plt.plot(DATA["Years"], DATA["logistic"], label="fit")
 plt.title("First fit attempt")
 plt.xlabel("year")
 plt.ylabel("CO2 Emission data of China")
+plt.legend()
 plt.show()
 print()
 
@@ -172,42 +172,39 @@ print()
 # Set estimated turning year: 2012
 # Co2 emission in 2012: about 7.04
 parameter = [7.04, 0.02, 2012]
-DATA["log"] = logistics(DATA["Years"], *parameter)
+DATA["logistic"] = logistics(DATA["Years"], *parameter)
 plt.figure()
 plt.plot(DATA["Years"], DATA["Emission"], label="Original data")
-plt.plot(DATA["Years"], DATA["log"], label="fit")
-plt.legend()
+plt.plot(DATA["Years"], DATA["logistic"], label="fit")
 plt.xlabel("year")
 plt.ylabel("CO2 Emission data of China")
-plt.title("Improved start value")
+plt.title("Improved Curve fitting")
+plt.legend()
 plt.show()
 
-
+# Best fit parameter
 parameter, covar = curve_fit(logistics, DATA["Years"],  DATA["Emission"],
                              p0=[7.04, 0.02, 2012])
 print("Fit parameter at final attempt ", parameter)
-DATA["log"] = logistics(DATA["Years"], *parameter)
-sigma = np.sqrt(np.diagonal(covar))
-x = ufloat(parameter[0], sigma[0])
-y = ufloat(parameter[1], sigma[1])
+sigma_values = np.sqrt(np.diagonal(covar))
+x = ufloat(parameter[0], sigma_values[0])
+y = ufloat(parameter[1], sigma_values[1])
 # Estimating forecast from 1995 to 2025
 y_pred = np.linspace(1995, 2025, 20)
 # Estimating best fit parameter
 text_res = "Best fit parameters:\na = {}\nb = {}".format(x, y)
 print(text_res)
-
 plt.figure()
 plt.plot(DATA["Years"], DATA["Emission"], label="Original data")
 plt.plot(y_pred, logistics(y_pred, *parameter), 'red', label="fit")
 # Upper bound and Lower bound for confidence intervals
-bound_upper = logistics(y_pred, *(parameter + sigma))
-bound_lower = logistics(y_pred, *(parameter - sigma))
+bound_upper = logistics(y_pred, *(parameter + sigma_values))
+bound_lower = logistics(y_pred, *(parameter - sigma_values))
 # plotting the confidence intervals
 plt.fill_between(y_pred, bound_lower, bound_upper,
                  color='black', alpha=0.15, label="Confidence")
 plt.legend()
-plt.title("Final logistics function")
+plt.title("Final attempt of logistics function")
 plt.xlabel("year")
 plt.ylabel("CO2 Emission data of China")
 plt.show()
-
